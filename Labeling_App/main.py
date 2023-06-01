@@ -50,6 +50,7 @@ window = sg.Window('Ritter-Sport Labeling', layout, finalize=True)
 window['-Input-'].bind("<Return>", "_Enter")
 
 label_dict = {"file": [], "label": []}
+all_labeled = False
 
 while True:                             # The Event Loop
     event, values = window.read() 
@@ -58,8 +59,16 @@ while True:                             # The Event Loop
         images_path = values["-Folder-"]
         image_list = os.listdir(images_path)
         image_count = 0
-        while already_labeled(image_list[image_count]):
+        while (already_labeled(image_list[image_count])) or (".png" not in image_list[image_count]):
             image_count += 1
+            if image_count >= len(image_list):
+                window["-Filename-"].update("Alle Bilder wurden gelabeled!")
+                window["-Input-"].update(disabled=True)
+                window["-Delete-"].update(disabled=True)
+                all_labeled = True
+                break
+        if all_labeled:
+            continue
         im = cv2.imread(images_path + "/" + image_list[image_count])
         print(images_path + "/" + image_list[image_count])
         im = cv2.resize(im, (600,600))
@@ -77,7 +86,7 @@ while True:                             # The Event Loop
         keys = label_dict.keys()
         # Extract the values from the dictionary
         csv_values = zip(*label_dict.values())
-        with open(CSV_NAME, "w", newline="") as file:
+        with open(CSV_NAME, "a", newline="") as file:
             writer = csv.writer(file)
             # Write the column headers
             writer.writerow(keys)
@@ -88,10 +97,9 @@ while True:                             # The Event Loop
         if image_count >= len(image_list):
             window["-Filename-"].update("Alle Bilder wurden gelabeled!")
             window["-Input-"].update(disabled=True)
+            window["-Delete-"].update(disabled=True)
             continue
-        while ".png" not in image_list[image_count]:
-            image_count += 1
-        while already_labeled(image_list[image_count]):
+        while (already_labeled(image_list[image_count])) or (".png" not in image_list[image_count]):
             image_count += 1
         window["-Filename-"].update(image_list[image_count])
         im = cv2.imread(images_path + "/" + image_list[image_count])
