@@ -1,7 +1,6 @@
 from math import sqrt
 import numpy as np
 from numpy.random import randn
-from Neuron import Neuron
 
 class Layer:
     def __init__(self, units):
