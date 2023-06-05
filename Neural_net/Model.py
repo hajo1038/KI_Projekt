@@ -7,19 +7,22 @@ def softmax(vector):
     vector -= np.max(vector)
     return np.exp(vector) / np.sum(np.exp(vector))
 
+
 def softmax_grad(vector):
     # Reshape the 1-d softmax to 2-d so that np.dot will do the matrix multiplication
     # https://medium.com/intuitionmath/how-to-implement-the-softmax-derivative-independently-from-any-loss-function-ae6d44363a9d
-
     softmax_output = softmax(vector)
     s = softmax_output.reshape(-1, 1)
     return np.diagflat(s) - np.dot(s, s.T)
 
+
 def relu(vector):
     return vector * (vector > 0)
 
+
 def relu_d(vector):
     return (vector > 0).astype(int)
+
 
 def binary_cross_entropy(y_pred_proba, y_true):
     return (-1)*((y_true * math.log2(y_pred_proba)) + ((1-y_true) * math.log2(1-y_pred_proba)))
@@ -31,9 +34,11 @@ def multi_cross_entropy(y_pred_proba, y_true):
         ce_sum += y_true[i] * math.log2(y_pred_proba[i])
     return ce_sum * (-1)
 
+
 def multi_cross_entropy_d(pred_proba, y_true):
     # derivate with respect to the predicted probabilities
     return -(y_true/pred_proba)
+
 
 class Model:
     def __init__(self):
@@ -56,6 +61,7 @@ class Model:
         # go through every datapoint (one row of feature values)
         for epoch in range(epochs):
             print(f"Epoche {epoch + 1} von {epochs}")
+            loss = 0
             for id_x, datapoint in enumerate(x):
                 for id_l, layer in enumerate(self.layers):
                     if id_l == 0:
@@ -78,23 +84,22 @@ class Model:
             print(f"{loss}\n")
             self.loss.append(loss)
 
-
     def update(self, features, labels, eta):
         nabla_b = [np.zeros(self.layers[id_l].biases.shape) for id_l in range(1, len(self.layers))]
         nabla_w = [np.zeros(self.layers[id_l].weights.shape) for id_l in range(1, len(self.layers))]
-        #for x, y in zip(features, labels):
-            #delta_nabla_b, delta_nabla_w = self.backprop(x, y)
-            #nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
-            #nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
+        # for x, y in zip(features, labels):
+        #     delta_nabla_b, delta_nabla_w = self.backprop(x, y)
+        #     nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
+        #     nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
         delta_nabla_b, delta_nabla_w = self.backprop(features, labels)
         nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
         nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        #self.weights = [w - (eta / len(mini_batch)) * nw for w, nw in zip(self.weights, nabla_w)]
+        # self.weights = [w - (eta / len(mini_batch)) * nw for w, nw in zip(self.weights, nabla_w)]
         for id_l in range(1, len(self.layers)):
             self.layers[id_l].weights = self.layers[id_l].weights - (eta * nabla_w[id_l-1])
             self.layers[id_l].biases = self.layers[id_l].biases - (eta * nabla_b[id_l-1])
 
-        #self.biases = [b - (eta / len(mini_batch)) * nb for b, nb in zip(self.biases, nabla_b)]
+        # self.biases = [b - (eta / len(mini_batch)) * nb for b, nb in zip(self.biases, nabla_b)]
 
     def backprop(self, x, y):
         """Return a tuple "(nabla_b, nabla_w)" representing the
@@ -105,12 +110,12 @@ class Model:
         nabla_b = [np.zeros(self.layers[id_l].biases.shape) for id_l in range(1, len(self.layers))]
         nabla_w = [np.zeros(self.layers[id_l].weights.shape) for id_l in range(1, len(self.layers))]
         # feedforward
-        #activation = x
-        #activations = [x]  # list to store all the activations, layer by layer
-        #zs = []  # list to store all the z vectors, layer by layer
+        # activation = x
+        # activations = [x]  # list to store all the activations, layer by layer
+        # zs = []  # list to store all the z vectors, layer by layer
         # backward pass
         delta = np.dot(multi_cross_entropy_d(self.layers[-1].activations, y)[:, np.newaxis].T, softmax_grad(self.layers[-1].values))
-        nabla_b[-1] = delta.T[:,0]
+        nabla_b[-1] = delta.T[:, 0]
         nabla_w[-1] = np.outer(delta, self.layers[-2].activations)
         # Note that the variable l in the loop below is used a little
         # differently to the notation in Chapter 2 of the book.  Here,
@@ -124,7 +129,7 @@ class Model:
             delta = (self.layers[-l + 1].weights.T @ nabla_b[-l + 1]) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.outer(delta, self.layers[-l - 1].activations.transpose())
-        return (nabla_b, nabla_w)
+        return nabla_b, nabla_w
 
 # TODO Feed-Forward in Funktion auslagern
 
@@ -145,7 +150,6 @@ class Model:
                 else:
                     self.layers[id_l].activations = softmax(self.layers[id_l].values)
             if y.shape[1] > 2:
-                #
                 loss = multi_cross_entropy(self.layers[-1].activations, y[id_x, :])
                 prediction = np.argmax(self.layers[-1].activations)
                 y_true = np.argmax(y[id_x, :])

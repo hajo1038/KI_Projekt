@@ -2,6 +2,7 @@ from math import sqrt
 import numpy as np
 from numpy.random import randn
 
+
 class Layer:
     def __init__(self, units):
         self.units = units
@@ -19,9 +20,5 @@ class Layer:
         self.weights = np.zeros((self.units, weight_per_neuron))
         self.nabla_w = np.zeros((self.units, weight_per_neuron))
         for row_count, row in enumerate(self.weights):
-            self.weights[row_count, :] = [sqrt(2.0 / weight_per_neuron) * randn(1)[0] for weight in range(weight_per_neuron)]
-        #for unit in range(self.units):
-
-
-            #neuron = Neuron(weight_per_neuron)
-            #self.neurons.append(neuron)
+            self.weights[row_count, :] = [sqrt(2.0 / weight_per_neuron) * randn(1)[0]
+                                          for weight in range(weight_per_neuron)]
