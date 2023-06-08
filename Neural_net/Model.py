@@ -30,20 +30,31 @@ def binary_cross_entropy(y_pred_proba, y_true):
 
 def multi_cross_entropy(y_pred_proba, y_true):
     ce_sum = 0
-    for i in range(len(y_pred_proba)):
-        ce_sum += y_true[i] * math.log2(y_pred_proba[i])
-    return ce_sum * (-1)
+    epsilon = 1e-13
+    index = [np.argmax(y_true)]
+    if y_pred_proba[index] == 0:
+       return (-1) * math.log2(y_pred_proba[index] + epsilon)
+    return (-1) * math.log2(y_pred_proba[index])
+    # for i in range(len(y_pred_proba)):
+    #     ce_sum += y_true[i] * math.log2(y_pred_proba[i])
+    # return ce_sum * (-1)
 
 
 def multi_cross_entropy_d(pred_proba, y_true):
     # derivate with respect to the predicted probabilities
-    return -(y_true/pred_proba)
+    epsilon = 1e-13
+    #return pred_proba - y_true
+    return -(y_true / (pred_proba+epsilon))
 
 
 class Model:
     def __init__(self):
         self.layers = []
         self.loss = []
+        self.val_loss = []
+        self.predictions = []
+        self.accuracies = []
+        self.val_accuracies = []
 
     def add_layer(self, units_in_layer):
         # assert isinstance(layer, Layer)
@@ -52,7 +63,7 @@ class Model:
         if len(self.layers) > 1:
             layer.connect_layer(self.layers[-2])
 
-    def train(self, x, y, epochs):
+    def train(self, x, y,  epochs, eta, val_x=None, val_y=None):
         # x has dimensions: datapoints x features, y has dimensions: datapoints x Labels
         if x.shape[1] != self.layers[0].units:
             raise Exception("Input dimension does not match dimension of first layer")
@@ -62,6 +73,8 @@ class Model:
         for epoch in range(epochs):
             print(f"Epoche {epoch + 1} von {epochs}")
             loss = 0
+            loss_sum = 0
+            true_positives = 0
             for id_x, datapoint in enumerate(x):
                 for id_l, layer in enumerate(self.layers):
                     if id_l == 0:
@@ -78,11 +91,22 @@ class Model:
                         self.layers[id_l].activations = softmax(self.layers[id_l].values)
                 if y.shape[1] > 2:
                     loss = multi_cross_entropy(self.layers[-1].activations, y[id_x, :])
+                    loss_sum += loss
+                    prediction = np.argmax(self.layers[-1].activations)
+                    y_true = np.argmax(y[id_x, :])
+                    true_positives += int(np.array_equal(prediction, y_true))
                 elif y.shape[1] == 2:
                     loss = binary_cross_entropy(self.layers[-1].activations, y[id_x, :])
-                self.update(datapoint, y[id_x, :], 0.001)
-            print(f"{loss}\n")
-            self.loss.append(loss)
+                self.update(datapoint, y[id_x, :], eta)
+
+            self.loss.append(loss_sum/x.shape[0])
+            print(f"Train-Loss: {self.loss[-1]}")
+            self.accuracies.append(true_positives/y.shape[0])
+            print(f"Train-Acc: {self.accuracies[-1]}")
+
+            # if there is validation data, calculate the validation loss
+            if (val_x is not None) and (val_y is not None):
+                self.validation(val_x, val_y)
 
     def update(self, features, labels, eta):
         nabla_b = [np.zeros(self.layers[id_l].biases.shape) for id_l in range(1, len(self.layers))]
@@ -154,6 +178,40 @@ class Model:
                 prediction = np.argmax(self.layers[-1].activations)
                 y_true = np.argmax(y[id_x, :])
                 tp += int(np.array_equal(prediction, y_true))
+                self.predictions.append(self.layers[-1].activations.tolist())
             elif y.shape[1] == 2:
                 loss = binary_cross_entropy(self.layers[-1].activations, y[id_x, :])
         print(f"Accuracy = {tp/y.shape[0]}\n")
+
+    def validation(self, val_x, val_y):
+        val_loss = 0
+        val_loss_sum = 0
+        true_positives = 0
+        for id_x, datapoint in enumerate(val_x):
+            for id_l, layer in enumerate(self.layers):
+                if id_l == 0:
+                    self.layers[id_l].values = datapoint
+                    self.layers[id_l].activations = datapoint
+                    continue
+                # calculate the values of the neurons based on the weights and values of the previous layer
+                self.layers[id_l].values = np.dot(layer.weights,
+                                                  self.layers[id_l - 1].activations) + layer.biases
+                # ReLU activation function in all other up to the last one
+                if id_l < (len(self.layers) - 1):
+                    self.layers[id_l].activations = relu(self.layers[id_l].values)
+                # use softmax in the last layer
+                else:
+                    self.layers[id_l].activations = softmax(self.layers[id_l].values)
+            if val_y.shape[1] > 2:
+                val_loss = multi_cross_entropy(self.layers[-1].activations, val_y[id_x, :])
+                val_loss_sum += val_loss
+                prediction = np.argmax(self.layers[-1].activations)
+                y_true = np.argmax(val_y[id_x, :])
+                true_positives += int(np.array_equal(prediction, y_true))
+            elif val_y.shape[1] == 2:
+                val_loss = binary_cross_entropy(self.layers[-1].activations, val_y[id_x, :])
+
+        self.val_loss.append(val_loss_sum / val_x.shape[0])
+        print(f"Val-Loss: {self.val_loss[-1]}")
+        self.val_accuracies.append(true_positives / val_y.shape[0])
+        print(f"Val-Acc: {self.val_accuracies[-1]}\n")

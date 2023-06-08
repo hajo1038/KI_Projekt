@@ -19,6 +19,7 @@ class Layer:
         # weight matrix is neurons x neurons_in_previous_layer
         self.weights = np.zeros((self.units, weight_per_neuron))
         self.nabla_w = np.zeros((self.units, weight_per_neuron))
-        for row_count, row in enumerate(self.weights):
-            self.weights[row_count, :] = [sqrt(2.0 / weight_per_neuron) * randn(1)[0]
-                                          for weight in range(weight_per_neuron)]
+        self.weights = randn(self.units, weight_per_neuron) * sqrt(2.0 / weight_per_neuron)
+        # for row_count, row in enumerate(self.weights):
+        #     self.weights[row_count, :] = [sqrt(2.0 / weight_per_neuron) * randn(1)[0]
+        #                                   for weight in range(weight_per_neuron)]
