@@ -78,20 +78,28 @@ while True:                             # The Event Loop
         window["-Image-"].update(source=base64_image)
         window["-Filename-"].update(image_list[image_count])
     if event == "-Input-" + "_Enter":
-        label = values["-Input-"]
-        # save file name from when enter was pressed
-        label_dict["file"].append(image_list[image_count])
-        label_dict["label"].append(label)
+        if exists(CSV_NAME):
+            label = values["-Input-"]
+            filename = image_list[image_count]
+            with open(CSV_NAME, "a", newline="") as file:
+                writer = csv.writer(file)
+                # Write the values row by row
+                writer.writerow([filename, label])
+        else:
+            label = values["-Input-"]
+            # save file name from when enter was pressed
+            label_dict["file"].append(image_list[image_count])
+            label_dict["label"].append(label)
+            keys = label_dict.keys()
+            # Extract the values from the dictionary
+            csv_values = zip(*label_dict.values())
+            with open(CSV_NAME, "w", newline="") as file:
+                writer = csv.writer(file)
+                # Write the column headers
+                writer.writerow(keys)
+                # Write the values row by row
+                writer.writerows(csv_values)
         window["-Input-"].update("")
-        keys = label_dict.keys()
-        # Extract the values from the dictionary
-        csv_values = zip(*label_dict.values())
-        with open(CSV_NAME, "a", newline="") as file:
-            writer = csv.writer(file)
-            # Write the column headers
-            writer.writerow(keys)
-            # Write the values row by row
-            writer.writerows(csv_values)
         # increase image_count to load next image
         image_count += 1
         if image_count >= len(image_list):
