@@ -71,21 +71,21 @@ def load_mnist():
 def main():
     # X_train, X_test, y_train, y_test = load_iris()
 
-    # X_train, X_test, y_train, y_test = load_ritter_sport_data()
+    X_train, X_test, y_train, y_test = load_ritter_sport_data()
 
-    X_train, X_test, y_train, y_test = load_mnist()
+    # X_train, X_test, y_train, y_test = load_mnist()
 
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=1)
+    # X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=1)
 
     model = Model()
     model.add_layer(X_train.shape[1])
+    model.add_layer(20)
     model.add_layer(10)
-    model.add_layer(5)
     model.add_layer(y_train.shape[1])
-    model.train(X_train, y_train, epochs=50, eta=0.01, val_x=X_val, val_y=y_val)
+    model.train(X_train, y_train, epochs=50, eta=0.01, mini_batch_size=10, val_x=None, val_y=None)
 
     model.predict(X_test, y_test)
-    #print(f"Pred: {model.predictions} True: {y_test}")
+    # print(f"Pred: {model.predictions} True: {y_test}")
     plt.plot(model.loss)
     plt.plot(model.val_loss)
     plt.show()
