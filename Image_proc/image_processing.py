@@ -4,13 +4,14 @@ import numpy as np
 import matplotlib.pylab as plt
 from glob import glob
 import pandas as pd
+import os
 
 
 def main():
     images_list = glob(r"../data/*.png")
-    data = open_csv()
-    data.to_csv(r"../Labeling_App/Labels.csv", mode='a', index = False, header=False)
+    df = open_csv()
     for image in images_list:
+        head, tail = os.path.split(image)
         image = cv2.imread(image)
         blurred_image, image = preprocess_image(image)
         area_of_all_contours, number_of_contours = detect_contour(image, blurred_image)
@@ -19,10 +20,20 @@ def main():
         number_of_lines = detect_lines(image)
         print("Number of Lines " + str(number_of_lines))
 
+        row_number = df[df.file == tail].index
+        print(tail)
+        df.loc[df.index[row_number], "Contours"] = number_of_contours
+        df.loc[df.index[row_number], "Lines"] = number_of_lines
+        df.loc[df.index[row_number], "Contours Size"] = area_of_all_contours
+    df.to_csv("data_with_features.csv", encoding='utf-8', index=False)
+
 
 def open_csv():
-    data = pd.read_csv(r"../Labeling_App/Labels.csv")
-    return data
+    df = pd.read_csv(r"../Labeling_App/Labels.csv")
+    df["Lines"] = ""
+    df["Contours"] = ""
+    df["Contours Size"] = ""
+    return df
 
 
 def auto_canny_edge_detection(image, sigma=0.33):
@@ -42,7 +53,11 @@ def detect_lines(image):
         for i in range(0, len(linesP)):
             l = linesP[i][0]
             cv2.line(image_with_lines, (l[0], l[1]), (l[2], l[3]), (0, 0, 255), 3, cv2.LINE_AA)
-    return len(linesP)
+    try:
+        length = len(linesP)
+        return length
+    except TypeError:
+        return 0
 
 
 def preprocess_image(image):
