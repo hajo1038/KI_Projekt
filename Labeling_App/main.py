@@ -57,7 +57,7 @@ while True:                             # The Event Loop
     print(event, values)
     if event == "-Folder-":
         images_path = values["-Folder-"]
-        image_list = os.listdir(images_path)
+        image_list = sorted(os.listdir(images_path))
         image_count = 0
         while (already_labeled(image_list[image_count])) or (".png" not in image_list[image_count]):
             image_count += 1
@@ -109,6 +109,14 @@ while True:                             # The Event Loop
             continue
         while (already_labeled(image_list[image_count])) or (".png" not in image_list[image_count]):
             image_count += 1
+            if image_count >= len(image_list):
+                window["-Filename-"].update("Alle Bilder wurden gelabeled!")
+                window["-Input-"].update(disabled=True)
+                window["-Delete-"].update(disabled=True)
+                all_labeled = True
+                break
+        if all_labeled:
+            continue
         window["-Filename-"].update(image_list[image_count])
         im = cv2.imread(images_path + "/" + image_list[image_count])
         print(images_path + "/" + image_list[image_count])
