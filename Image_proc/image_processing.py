@@ -8,7 +8,7 @@ import os
 
 
 def main():
-    images_list = glob(r"../data/*.png")
+    images_list = glob(r"../data/256_res/*.png")
     df = open_csv()
     for image in images_list:
         head, tail = os.path.split(image)
@@ -19,13 +19,39 @@ def main():
         print("Number of Contours " + str(number_of_contours))
         number_of_lines = detect_lines(image)
         print("Number of Lines " + str(number_of_lines))
+        fast_number = detect_with_FAST(blurred_image)
+        brief_number = detect_with_brief(image)
 
         row_number = df[df.file == tail].index
         print(tail)
         df.loc[df.index[row_number], "Contours"] = number_of_contours
         df.loc[df.index[row_number], "Lines"] = number_of_lines
         df.loc[df.index[row_number], "Contours Size"] = area_of_all_contours
-    df.to_csv("data_with_features.csv", encoding='utf-8', index=False)
+        df.loc[df.index[row_number], "Fast"] = fast_number
+        df.loc[df.index[row_number], "Brief"] = brief_number
+
+    df.to_csv("data_with_features_brief_and_fast.csv", encoding='utf-8', index=False)
+
+
+def detect_with_brief(image):
+    star = cv2.xfeatures2d.StarDetector_create()
+    # Initiate BRIEF extractor
+    brief = cv2.xfeatures2d.BriefDescriptorExtractor_create()
+    # find the keypoints with STAR
+    kp = star.detect(image, None)
+    # compute the descriptors with BRIEF
+    kp, des = brief.compute(image, kp)
+    try:
+        number = des.shape[0]
+        return number
+    except AttributeError:
+        return 0
+
+
+def detect_with_FAST(blurred_image):
+    fast = cv2.FastFeatureDetector_create()
+    kp = fast.detect(blurred_image, None)
+    return len(kp)
 
 
 def open_csv():
