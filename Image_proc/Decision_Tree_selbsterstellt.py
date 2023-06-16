@@ -1,3 +1,6 @@
+#ID3-Algorithmus wird hier verwendet. 
+#Soll einfacher sein als CART-Algorithmus, da hier kein Gini-Index erechnet werden muss.
+
 import numpy as np
 
 class MyDecisionTreeClassifier:
@@ -12,7 +15,7 @@ class MyDecisionTreeClassifier:
         return entropy
 
     def information_gain(self, feature, labels):
-        # Berechnung des Information Gains für das gegebene Feature und Labels
+        # Berechnung des Information Gains für das gegebene Feature und für die Labels
         total_entropy = self.entropy(labels)
         unique_values = np.unique(feature)
         weighted_entropy = 0
@@ -70,12 +73,12 @@ class MyDecisionTreeClassifier:
         # Trainieren des Decision Trees
         self.tree = self.build_tree(features, labels)
 
-    def predict_single(self, example, tree):
+    #def predict_single(self, example, tree):
         # Vorhersage für ein einzelnes Beispiel basierend auf dem gegebenen Entscheidungsbaum
-        if isinstance(tree, int):
+        #if isinstance(tree, int):
             # Wenn es sich um eine Blattknoten handelt, geben wir das Label zurück
-            return tree
-        feature = tree['feature']
-        threshold = tree['threshold']
-        if example[feature] == threshold:
+            #return tree
+        #feature = tree['feature']
+        #threshold = tree['threshold']
+        #if example[feature] == threshold:
 
