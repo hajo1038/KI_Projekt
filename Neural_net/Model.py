@@ -31,13 +31,13 @@ def binary_cross_entropy(y_pred_proba, y_true):
 def multi_cross_entropy(y_pred_proba, y_true):
     ce_sum = 0
     epsilon = 1e-13
-    index = [np.argmax(y_true)]
-    if y_pred_proba[index] == 0:
-       return (-1) * math.log2(y_pred_proba[index] + epsilon)
-    return (-1) * math.log2(y_pred_proba[index])
-    # for i in range(len(y_pred_proba)):
-    #     ce_sum += y_true[i] * math.log2(y_pred_proba[i])
-    # return ce_sum * (-1)
+    # index = [np.argmax(y_true)]
+    # if y_pred_proba[index] == 0:
+    #    return (-1) * math.log2(y_pred_proba[index] + epsilon)
+    # return (-1) * math.log2(y_pred_proba[index])
+    for i in range(len(y_pred_proba)):
+        ce_sum += y_true[i] * math.log2(y_pred_proba[i] + epsilon)
+    return ce_sum * (-1)
 
 
 def multi_cross_entropy_d(pred_proba, y_true):

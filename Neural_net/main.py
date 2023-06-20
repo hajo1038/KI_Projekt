@@ -1,6 +1,8 @@
 from Model import Model
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 import tensorflow as tf
 # from keras.datasets import mnist
@@ -21,6 +23,20 @@ def load_iris():
     X = df_X.to_numpy()
     y = df_label.to_numpy()
     [X_train, X_test, y_train, y_test] = train_test_split(X, y, test_size=0.3, random_state=42)
+    return X_train, X_test, y_train, y_test
+
+
+def load_ritter_sport_xy():
+    df = pd.read_csv("../Image_proc/data_with_features_with_FAST.csv")
+    df_labels = df["label"]
+    df_labels = pd.get_dummies(df_labels, columns=["label"])
+    labels = df_labels.to_numpy()
+    features = df[["Lines", "Contours", "Contours Size", "Fast"]].to_numpy()
+    [X_train, X_test, y_train, y_test] = train_test_split(features, labels, test_size=0.3, random_state=42)
+    train_mean = np.mean(X_train)
+    train_std = np.std(X_train)
+    X_train = (X_train - train_mean) / train_std
+    X_test = (X_test - train_mean) / train_std
     return X_train, X_test, y_train, y_test
 
 
@@ -71,20 +87,31 @@ def load_mnist():
 def main():
     # X_train, X_test, y_train, y_test = load_iris()
 
-    X_train, X_test, y_train, y_test = load_ritter_sport_data()
+    # X_train, X_test, y_train, y_test = load_ritter_sport_data()
 
     # X_train, X_test, y_train, y_test = load_mnist()
 
-    # X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=1)
+    X_train, X_test, y_train, y_test = load_ritter_sport_xy()
+
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
 
     model = Model()
     model.add_layer(X_train.shape[1])
-    model.add_layer(20)
-    model.add_layer(10)
+    model.add_layer(64)
+    model.add_layer(32)
+    model.add_layer(16)
     model.add_layer(y_train.shape[1])
-    model.train(X_train, y_train, epochs=50, eta=0.01, mini_batch_size=10, val_x=None, val_y=None)
+    model.train(X_train, y_train, epochs=600, eta=0.01, mini_batch_size=16, val_x=X_val, val_y=y_val)
 
     model.predict(X_test, y_test)
+    diff = np.argmax(y_test, axis=1) - np.argmax(model.predictions, axis=1)
+    mean_diff = np.mean(np.abs(diff[np.nonzero(diff)]))
+    print(f"Mean-Error: {mean_diff}")
+
+    y_test_max = np.argmax(y_test, axis=1)
+    pred_max = np.argmax(model.predictions, axis=1)
+    ConfusionMatrixDisplay.from_predictions(y_test_max, pred_max)
+    plt.show()
     # print(f"Pred: {model.predictions} True: {y_test}")
     plt.plot(model.loss)
     plt.plot(model.val_loss)
