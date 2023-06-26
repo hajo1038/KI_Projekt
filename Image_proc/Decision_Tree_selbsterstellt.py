@@ -14,17 +14,30 @@ class MyDecisionTreeClassifier:
         entropy = -np.sum(probabilities * np.log2(probabilities))
         return entropy
 
-    def information_gain(self, feature, labels):
+    #def information_gain(self, feature, labels):
         # Berechnung des Information Gains für das gegebene Feature und für die Labels
+        #total_entropy = self.entropy(labels)
+        #unique_values = np.unique(feature)
+        #weighted_entropy = 0
+        #for v in unique_values:
+            #subset_labels = labels[feature == v]
+            #weight = len(subset_labels) / len(labels)
+            #weighted_entropy += weight * self.entropy(subset_labels)
+        #information_gain = total_entropy - weighted_entropy
+        #return information_gain
+
+    # Berechnung des Information Gains für das gegebene Feature und Labels
         total_entropy = self.entropy(labels)
         unique_values = np.unique(feature)
         weighted_entropy = 0
         for v in unique_values:
             subset_labels = labels[feature == v]
             weight = len(subset_labels) / len(labels)
-            weighted_entropy += weight * self.entropy(subset_labels)
+            subset_entropy = self.entropy(subset_labels)
+            weighted_entropy += weight * subset_entropy
         information_gain = total_entropy - weighted_entropy
         return information_gain
+
 
     def split_data(self, feature, labels, split_value):
         # Aufteilen der Daten basierend auf dem gegebenen Feature und Schwellenwert
@@ -52,22 +65,63 @@ class MyDecisionTreeClassifier:
                     best_threshold = value
         return best_feature, best_threshold
 
-    def build_tree(self, features, labels):
-        # Rekursive Funktion zum Aufbau des Entscheidungsbaums
-        if len(np.unique(labels)) == 1:
-            # Wenn alle Labels gleich sind, haben wir ein Blatt erreicht
-            return np.unique(labels)[0]
-        best_feature, best_threshold = self.find_best_split(features, labels)
-        if best_feature is None:
-            # Wenn kein bestes Feature gefunden wurde, haben wir ein Blatt erreicht
-            return np.argmax(np.bincount(labels))
-        left_indices, right_indices = self.split_data(features[:, best_feature], labels, best_threshold)
-        tree = {}
-        tree['feature'] = best_feature
-        tree['threshold'] = best_threshold
-        tree['left'] = self.build_tree(features[left_indices], labels[left_indices])
-        tree['right'] = self.build_tree(features[right_indices], labels[right_indices])
+def build_tree(self, features, labels):
+    # Erstellen eines leeren Entscheidungsbaums
+    tree = {}
+    tree['feature'] = None
+    tree['threshold'] = None
+    tree['left'] = None
+    tree['right'] = None
+
+    if len(np.unique(labels)) == 1:
+        # Wenn alle Labels gleich sind, haben wir ein Blatt erreicht
+        tree['label'] = np.unique(labels)[0]
         return tree
+
+    if features.shape[1] == 0:
+        # Wenn keine Features mehr vorhanden sind, geben wir das häufigste Label zurück
+        tree['label'] = np.argmax(np.bincount(labels))
+        return tree
+
+    best_feature, best_threshold = self.find_best_split(features, labels)
+
+    if best_feature is None:
+        # Wenn kein bestes Feature gefunden wurde, haben wir ein Blatt erreicht
+        tree['label'] = np.argmax(np.bincount(labels))
+        return tree
+
+    left_indices, right_indices = self.split_data(features[:, best_feature], labels, best_threshold)
+
+    if len(left_indices) == 0 or len(right_indices) == 0:
+        # Wenn eine Seite der Aufteilung leer ist, geben wir das häufigste Label zurück
+        tree['label'] = np.argmax(np.bincount(labels))
+        return tree
+
+    tree['feature'] = best_feature
+    tree['threshold'] = best_threshold
+    tree['left'] = self.build_tree(features[left_indices], labels[left_indices])
+    tree['right'] = self.build_tree(features[right_indices], labels[right_indices])
+
+    return tree
+
+    
+    
+    #def build_tree(self, features, labels):
+        # Rekursive Funktion zum Aufbau des Entscheidungsbaums
+        #if len(np.unique(labels)) == 1:
+            # Wenn alle Labels gleich sind, haben wir ein Blatt erreicht
+            #return np.unique(labels)[0]
+        #best_feature, best_threshold = self.find_best_split(features, labels)
+        #if best_feature is None:
+            # Wenn kein bestes Feature gefunden wurde, haben wir ein Blatt erreicht
+            #return np.argmax(np.bincount(labels))
+        #left_indices, right_indices = self.split_data(features[:, best_feature], labels, best_threshold)
+        #tree = {}
+        #tree['feature'] = best_feature
+        #tree['threshold'] = best_threshold
+        #tree['left'] = self.build_tree(features[left_indices], labels[left_indices])
+        #tree['right'] = self.build_tree(features[right_indices], labels[right_indices])
+        #return tree
 
     def fit(self, features, labels):
         # Trainieren des Decision Trees
