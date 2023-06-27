@@ -2,6 +2,8 @@
 #Soll einfacher sein als CART-Algorithmus, da hier kein Gini-Index erechnet werden muss.
 
 import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
 class MyDecisionTreeClassifier:
     def __init__(self):
@@ -14,7 +16,7 @@ class MyDecisionTreeClassifier:
         entropy = -np.sum(probabilities * np.log2(probabilities))
         return entropy
 
-    #def information_gain(self, feature, labels):
+    def information_gain(self, feature, labels):
         # Berechnung des Information Gains für das gegebene Feature und für die Labels
         #total_entropy = self.entropy(labels)
         #unique_values = np.unique(feature)
@@ -65,44 +67,44 @@ class MyDecisionTreeClassifier:
                     best_threshold = value
         return best_feature, best_threshold
 
-def build_tree(self, features, labels):
-    # Erstellen eines leeren Entscheidungsbaums
-    tree = {}
-    tree['feature'] = None
-    tree['threshold'] = None
-    tree['left'] = None
-    tree['right'] = None
+    def build_tree(self, features, labels):
+        # Erstellen eines leeren Entscheidungsbaums
+        tree = {}
+        tree['feature'] = None
+        tree['threshold'] = None
+        tree['left'] = None
+        tree['right'] = None
 
-    if len(np.unique(labels)) == 1:
-        # Wenn alle Labels gleich sind, haben wir ein Blatt erreicht
-        tree['label'] = np.unique(labels)[0]
+        if len(np.unique(labels)) == 1:
+            # Wenn alle Labels gleich sind, haben wir ein Blatt erreicht
+            tree['label'] = np.unique(labels)[0]
+            return tree
+
+        if features.shape[1] == 0:
+            # Wenn keine Features mehr vorhanden sind, geben wir das häufigste Label zurück
+            tree['label'] = np.argmax(np.bincount(labels))
+            return tree
+
+        best_feature, best_threshold = self.find_best_split(features, labels)
+
+        if best_feature is None:
+            # Wenn kein bestes Feature gefunden wurde, haben wir ein Blatt erreicht
+            tree['label'] = np.argmax(np.bincount(labels))
+            return tree
+
+        left_indices, right_indices = self.split_data(features[:, best_feature], labels, best_threshold)
+
+        if len(left_indices) == 0 or len(right_indices) == 0:
+            # Wenn eine Seite der Aufteilung leer ist, geben wir das häufigste Label zurück
+            tree['label'] = np.argmax(np.bincount(labels))
+            return tree
+
+        tree['feature'] = best_feature
+        tree['threshold'] = best_threshold
+        tree['left'] = self.build_tree(features[left_indices], labels[left_indices])
+        tree['right'] = self.build_tree(features[right_indices], labels[right_indices])
+
         return tree
-
-    if features.shape[1] == 0:
-        # Wenn keine Features mehr vorhanden sind, geben wir das häufigste Label zurück
-        tree['label'] = np.argmax(np.bincount(labels))
-        return tree
-
-    best_feature, best_threshold = self.find_best_split(features, labels)
-
-    if best_feature is None:
-        # Wenn kein bestes Feature gefunden wurde, haben wir ein Blatt erreicht
-        tree['label'] = np.argmax(np.bincount(labels))
-        return tree
-
-    left_indices, right_indices = self.split_data(features[:, best_feature], labels, best_threshold)
-
-    if len(left_indices) == 0 or len(right_indices) == 0:
-        # Wenn eine Seite der Aufteilung leer ist, geben wir das häufigste Label zurück
-        tree['label'] = np.argmax(np.bincount(labels))
-        return tree
-
-    tree['feature'] = best_feature
-    tree['threshold'] = best_threshold
-    tree['left'] = self.build_tree(features[left_indices], labels[left_indices])
-    tree['right'] = self.build_tree(features[right_indices], labels[right_indices])
-
-    return tree
 
     
     
@@ -136,3 +138,12 @@ def build_tree(self, features, labels):
         #threshold = tree['threshold']
         #if example[feature] == threshold:
 
+df = pd.read_csv("../Image_proc/data_with_features_without_white.csv")
+df_labels = df["label"]
+df_labels = pd.get_dummies(df_labels, columns=["label"])
+labels = df_labels.to_numpy()
+features = df[["Lines", "Contours Colour", "Contours Size Colour", "Fast"]].to_numpy()
+X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.25, random_state=42)
+
+my_tree = MyDecisionTreeClassifier()
+my_tree.fit(X_train, y_train)
