@@ -16,35 +16,24 @@ class MyDecisionTreeClassifier:
         entropy = -np.sum(probabilities * np.log2(probabilities))
         return entropy
 
-    def information_gain(self, feature, labels):
+    def information_gain(self, feature, labels, labels_left, labels_right):
         # Berechnung des Information Gains für das gegebene Feature und für die Labels
-        #total_entropy = self.entropy(labels)
-        #unique_values = np.unique(feature)
-        #weighted_entropy = 0
-        #for v in unique_values:
-            #subset_labels = labels[feature == v]
-            #weight = len(subset_labels) / len(labels)
-            #weighted_entropy += weight * self.entropy(subset_labels)
-        #information_gain = total_entropy - weighted_entropy
-        #return information_gain
-
-    # Berechnung des Information Gains für das gegebene Feature und Labels
         total_entropy = self.entropy(labels)
-        unique_values = np.unique(feature)
         weighted_entropy = 0
-        for v in unique_values:
-            subset_labels = labels[feature == v]
-            weight = len(subset_labels) / len(labels)
-            subset_entropy = self.entropy(subset_labels)
-            weighted_entropy += weight * subset_entropy
+        # subset_labels = labels[feature == v]
+        weight_left = len(labels_left) / len(labels)
+        weight_right = len(labels_right) / len(labels)
+        entropy_left = self.entropy(labels_left)
+        entropy_right = self.entropy(labels_right)
+        weighted_entropy = weight_left * entropy_left + weight_right * entropy_right
         information_gain = total_entropy - weighted_entropy
         return information_gain
 
 
     def split_data(self, feature, labels, split_value):
         # Aufteilen der Daten basierend auf dem gegebenen Feature und Schwellenwert
-        left_indices = np.where(feature == split_value)
-        right_indices = np.where(feature != split_value)
+        left_indices = np.where(feature <= split_value)
+        right_indices = np.where(feature > split_value)
         left_labels = labels[left_indices]
         right_labels = labels[right_indices]
         return left_labels, right_labels
@@ -60,7 +49,7 @@ class MyDecisionTreeClassifier:
             unique_values = np.unique(feature)
             for value in unique_values:
                 left_labels, right_labels = self.split_data(feature, labels, value)
-                gain = self.information_gain(feature, labels)
+                gain = self.information_gain(feature, labels, left_labels, right_labels)
                 if gain > best_gain:
                     best_gain = gain
                     best_feature = feature_idx
@@ -74,6 +63,8 @@ class MyDecisionTreeClassifier:
         tree['threshold'] = None
         tree['left'] = None
         tree['right'] = None
+
+        # if max_depth
 
         if len(np.unique(labels)) == 1:
             # Wenn alle Labels gleich sind, haben wir ein Blatt erreicht
@@ -103,40 +94,33 @@ class MyDecisionTreeClassifier:
         tree['threshold'] = best_threshold
         tree['left'] = self.build_tree(features[left_indices], labels[left_indices])
         tree['right'] = self.build_tree(features[right_indices], labels[right_indices])
-
         return tree
 
-    
-    
-    #def build_tree(self, features, labels):
-        # Rekursive Funktion zum Aufbau des Entscheidungsbaums
-        #if len(np.unique(labels)) == 1:
-            # Wenn alle Labels gleich sind, haben wir ein Blatt erreicht
-            #return np.unique(labels)[0]
-        #best_feature, best_threshold = self.find_best_split(features, labels)
-        #if best_feature is None:
-            # Wenn kein bestes Feature gefunden wurde, haben wir ein Blatt erreicht
-            #return np.argmax(np.bincount(labels))
-        #left_indices, right_indices = self.split_data(features[:, best_feature], labels, best_threshold)
-        #tree = {}
-        #tree['feature'] = best_feature
-        #tree['threshold'] = best_threshold
-        #tree['left'] = self.build_tree(features[left_indices], labels[left_indices])
-        #tree['right'] = self.build_tree(features[right_indices], labels[right_indices])
-        #return tree
-
-    def fit(self, features, labels):
+    def fit(self, features, labels, max_depth=None):
         # Trainieren des Decision Trees
         self.tree = self.build_tree(features, labels)
 
-    #def predict_single(self, example, tree):
-        # Vorhersage für ein einzelnes Beispiel basierend auf dem gegebenen Entscheidungsbaum
-        #if isinstance(tree, int):
-            # Wenn es sich um eine Blattknoten handelt, geben wir das Label zurück
-            #return tree
-        #feature = tree['feature']
-        #threshold = tree['threshold']
-        #if example[feature] == threshold:
+    def predict(self, features, labels):
+        tp = 0
+        for id_x, datapoint in enumerate(features):
+            node = self.tree
+            while(True):
+                splitting_feature = node['feature']
+                threshold = node['threshold']
+                if datapoint[splitting_feature] <= threshold:
+                    node = node["left"]
+                    if 'label' in node:
+                        prediction = node['label']
+                        tp += prediction == labels[id_x]
+                        break
+                else:
+                    node = node["right"]
+                    if 'label' in node:
+                        prediction = node['label']
+                        tp += prediction == labels[id_x]
+                        break
+        print(f"Accuracy: {tp/len(labels)}")
+
 
 df = pd.read_csv("../Image_proc/data_with_features_without_white.csv")
 df_labels = df["label"]
@@ -146,4 +130,6 @@ features = df[["Lines", "Contours Colour", "Contours Size Colour", "Fast"]].to_n
 X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.25, random_state=42)
 
 my_tree = MyDecisionTreeClassifier()
-my_tree.fit(X_train, y_train)
+my_tree.fit(X_train, np.argmax(y_train, axis=1), max_depth=4)
+my_tree.predict(X_test, np.argmax(y_test, axis=1))
+print("test")
