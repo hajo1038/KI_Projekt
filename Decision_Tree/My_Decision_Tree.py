@@ -1,13 +1,11 @@
-#ID3-Algorithmus wird hier verwendet. 
-#Soll einfacher sein als CART-Algorithmus, da hier kein Gini-Index erechnet werden muss.
-
 import numpy as np
-import pandas as pd
-from sklearn.model_selection import train_test_split
+
 
 class MyDecisionTreeClassifier:
     def __init__(self):
         self.tree = None
+        self.depth = 0
+        self.predictions = []
 
     def entropy(self, labels):
         # Berechnung der Entropie für die gegebenen Labels
@@ -29,13 +27,12 @@ class MyDecisionTreeClassifier:
         information_gain = total_entropy - weighted_entropy
         return information_gain
 
-
     def split_data(self, feature, labels, split_value):
         # Aufteilen der Daten basierend auf dem gegebenen Feature und Schwellenwert
         left_indices = np.where(feature <= split_value)
         right_indices = np.where(feature > split_value)
-        #left_labels = labels[left_indices]
-        #right_labels = labels[right_indices]
+        # left_labels = labels[left_indices]
+        # right_labels = labels[right_indices]
         return left_indices, right_indices
 
     def find_best_split(self, features, labels):
@@ -56,15 +53,21 @@ class MyDecisionTreeClassifier:
                     best_threshold = value
         return best_feature, best_threshold
 
-    def build_tree(self, features, labels):
+    def build_tree(self, features, labels, max_depth=None):
         # Erstellen eines leeren Entscheidungsbaums
         tree = {}
         tree['feature'] = None
         tree['threshold'] = None
         tree['left'] = None
         tree['right'] = None
+        tree['depth'] = None
 
-        # if max_depth
+        self.depth += 1
+
+        if max_depth is not None:
+            if self.depth > max_depth:
+                tree['label'] = np.argmax(np.bincount(labels))
+                return tree
 
         if len(np.unique(labels)) == 1:
             # Wenn alle Labels gleich sind, haben wir ein Blatt erreicht
@@ -93,43 +96,35 @@ class MyDecisionTreeClassifier:
         tree['feature'] = best_feature
         tree['threshold'] = best_threshold
         tree['left'] = self.build_tree(features[left_indices], labels[left_indices])
+        self.depth -= 1
         tree['right'] = self.build_tree(features[right_indices], labels[right_indices])
+        self.depth -= 1
         return tree
 
     def fit(self, features, labels, max_depth=None):
         # Trainieren des Decision Trees
-        self.tree = self.build_tree(features, labels)
+        self.tree = self.build_tree(features, labels, max_depth)
 
     def predict(self, features, labels):
         tp = 0
+        self.predictions = []
         for id_x, datapoint in enumerate(features):
             node = self.tree
-            while(True):
+            while True:
                 splitting_feature = node['feature']
                 threshold = node['threshold']
                 if datapoint[splitting_feature] <= threshold:
                     node = node["left"]
                     if 'label' in node:
                         prediction = node['label']
+                        self.predictions.append(prediction)
                         tp += prediction == labels[id_x]
                         break
                 else:
                     node = node["right"]
                     if 'label' in node:
                         prediction = node['label']
+                        self.predictions.append(prediction)
                         tp += prediction == labels[id_x]
                         break
         print(f"Accuracy: {tp/len(labels)}")
-
-
-df = pd.read_csv("../Image_proc/data_with_features_without_white.csv")
-df_labels = df["label"]
-df_labels = pd.get_dummies(df_labels, columns=["label"])
-labels = df_labels.to_numpy()
-features = df[["Lines", "Contours Colour", "Contours Size Colour", "Fast"]].to_numpy()
-X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.25, random_state=42)
-
-my_tree = MyDecisionTreeClassifier()
-my_tree.fit(X_train, np.argmax(y_train, axis=1), max_depth=4)
-my_tree.predict(X_train, np.argmax(y_train, axis=1))
-my_tree.predict(X_test, np.argmax(y_test, axis=1))
