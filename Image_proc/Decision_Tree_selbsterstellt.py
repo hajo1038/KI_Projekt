@@ -34,9 +34,9 @@ class MyDecisionTreeClassifier:
         # Aufteilen der Daten basierend auf dem gegebenen Feature und Schwellenwert
         left_indices = np.where(feature <= split_value)
         right_indices = np.where(feature > split_value)
-        left_labels = labels[left_indices]
-        right_labels = labels[right_indices]
-        return left_labels, right_labels
+        #left_labels = labels[left_indices]
+        #right_labels = labels[right_indices]
+        return left_indices, right_indices
 
     def find_best_split(self, features, labels):
         # Finden des besten Features und Schwellenwerts für die Aufteilung
@@ -48,8 +48,8 @@ class MyDecisionTreeClassifier:
             feature = features[:, feature_idx]
             unique_values = np.unique(feature)
             for value in unique_values:
-                left_labels, right_labels = self.split_data(feature, labels, value)
-                gain = self.information_gain(feature, labels, left_labels, right_labels)
+                left_ids, right_ids = self.split_data(feature, labels, value)
+                gain = self.information_gain(feature, labels, labels[left_ids], labels[right_ids])
                 if gain > best_gain:
                     best_gain = gain
                     best_feature = feature_idx
@@ -131,5 +131,5 @@ X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=
 
 my_tree = MyDecisionTreeClassifier()
 my_tree.fit(X_train, np.argmax(y_train, axis=1), max_depth=4)
+my_tree.predict(X_train, np.argmax(y_train, axis=1))
 my_tree.predict(X_test, np.argmax(y_test, axis=1))
-print("test")
