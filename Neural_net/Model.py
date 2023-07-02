@@ -57,6 +57,7 @@ class Model:
         self.true_positives = 0
         self.accuracies = []
         self.val_accuracies = []
+        self.dropout = 0.0
 
     def add_layer(self, units_in_layer):
         # assert isinstance(layer, Layer)
@@ -65,8 +66,9 @@ class Model:
         if len(self.layers) > 1:
             layer.connect_layer(self.layers[-2])
 
-    def train(self, x, y,  epochs, eta=0.01, mini_batch_size=1, val_x=None, val_y=None):
+    def train(self, x, y,  epochs, eta=0.01, mini_batch_size=1, dropout=0.0, val_x=None, val_y=None):
         # x has dimensions: datapoints x features, y has dimensions: datapoints x Labels
+        self.dropout = dropout
         if x.shape[1] != self.layers[0].units:
             raise Exception("Input dimension does not match dimension of first layer")
         elif y.shape[1] != self.layers[-1].units:
@@ -112,11 +114,6 @@ class Model:
         # self.biases = [b - (eta / len(mini_batch)) * nb for b, nb in zip(self.biases, nabla_b)]
 
     def backprop(self, x, y):
-        """Return a tuple "(nabla_b, nabla_w)" representing the
-        gradient for the cost function C_x.  "nabla_b" and
-        "nabla_w" are layer-by-layer lists of numpy arrays, similar
-        to "self.biases" and "self.weights"."""
-
         nabla_b = [np.zeros(self.layers[id_l].biases.shape) for id_l in range(1, len(self.layers))]
         nabla_w = [np.zeros(self.layers[id_l].weights.shape) for id_l in range(1, len(self.layers))]
         # feedforward
@@ -140,6 +137,10 @@ class Model:
                 self.layers[id_l].values = x
                 self.layers[id_l].activations = x
                 continue
+            elif self.dropout != 0.0:
+                dropout_matrix = np.random.rand(self.layers[id_l - 1].activations.shape[0]) < (1-self.dropout)
+                self.layers[id_l - 1].activations = self.layers[id_l - 1].activations * dropout_matrix
+                self.layers[id_l - 1].activations = self.layers[id_l - 1].activations / (1-self.dropout)
             # calculate the values of the neurons based on the weights and values of the previous layer
             self.layers[id_l].values = np.dot(layer.weights, self.layers[id_l - 1].activations) + layer.biases
             # ReLU activation function in all other up to the last one
