@@ -60,23 +60,24 @@ class MyDecisionTreeClassifier:
         tree['threshold'] = None
         tree['left'] = None
         tree['right'] = None
-        tree['depth'] = None
-
-        self.depth += 1
+        tree['depth'] = 1
 
         if max_depth is not None:
             if self.depth > max_depth:
                 tree['label'] = np.argmax(np.bincount(labels))
+                self.depth -= 1
                 return tree
 
         if len(np.unique(labels)) == 1:
             # Wenn alle Labels gleich sind, haben wir ein Blatt erreicht
             tree['label'] = np.unique(labels)[0]
+            self.depth -= 1
             return tree
 
         if features.shape[1] == 0:
             # Wenn keine Features mehr vorhanden sind, geben wir das häufigste Label zurück
             tree['label'] = np.argmax(np.bincount(labels))
+            self.depth -= 1
             return tree
 
         best_feature, best_threshold = self.find_best_split(features, labels)
@@ -84,6 +85,7 @@ class MyDecisionTreeClassifier:
         if best_feature is None:
             # Wenn kein bestes Feature gefunden wurde, haben wir ein Blatt erreicht
             tree['label'] = np.argmax(np.bincount(labels))
+            self.depth -= 1
             return tree
 
         left_indices, right_indices = self.split_data(features[:, best_feature], labels, best_threshold)
@@ -91,14 +93,15 @@ class MyDecisionTreeClassifier:
         if len(left_indices) == 0 or len(right_indices) == 0:
             # Wenn eine Seite der Aufteilung leer ist, geben wir das häufigste Label zurück
             tree['label'] = np.argmax(np.bincount(labels))
+            self.depth -= 1
             return tree
+
+        self.depth += 1
 
         tree['feature'] = best_feature
         tree['threshold'] = best_threshold
-        tree['left'] = self.build_tree(features[left_indices], labels[left_indices])
-        self.depth -= 1
-        tree['right'] = self.build_tree(features[right_indices], labels[right_indices])
-        self.depth -= 1
+        tree['left'] = self.build_tree(features[left_indices], labels[left_indices], max_depth)
+        tree['right'] = self.build_tree(features[right_indices], labels[right_indices], max_depth)
         return tree
 
     def fit(self, features, labels, max_depth=None):
