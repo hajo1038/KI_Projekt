@@ -13,6 +13,7 @@ import cv2
 import numpy as np
 import os
 import itertools
+import pickle
 import json
 import csv
 
@@ -172,14 +173,20 @@ def main():
 
     model = Model()
     model.add_layer(X_train.shape[1])
+    model.add_layer(128)
+    model.add_layer(64)
     model.add_layer(32)
-    model.add_layer(25)
-    model.add_layer(20)
-    model.add_layer(16)
+    #model.add_layer(64)
+    #model.add_layer(64)
+    #model.add_layer(32)
     model.add_layer(y_train.shape[1])
-    model.train(X_train, y_train, epochs=1200, eta=0.01, mini_batch_size=32, val_x=X_val, val_y=y_val)
+    #model.train(X_train, y_train, epochs=1600, eta=0.01, mini_batch_size=32, val_x=X_val, val_y=y_val)
+    model.train(X_train, y_train, epochs=800, eta=0.01, mini_batch_size=16, val_x=X_val, val_y=y_val)
 
     model.predict(X_test, y_test)
+
+    with open('my_neural_net.pkl', 'wb') as outp:
+        pickle.dump(model, outp, pickle.HIGHEST_PROTOCOL)
 
     mean_diff = get_mean_error(model.predictions, y_test)
     print(f"Mean-Error: {mean_diff}")
