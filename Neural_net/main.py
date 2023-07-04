@@ -90,16 +90,19 @@ def load_iris():
     return X_train, X_test, y_train, y_test
 
 
-def load_ritter_sport_xy(path):
+def load_ritter_sport_xy(path, feature_names=None, test_size=0.2):
     df = pd.read_csv(path)
     df_labels = df["label"]
     df_files = df["file"]
     df_labels = pd.get_dummies(df_labels, columns=["label"])
     labels = df_labels.to_numpy()
     df.drop(columns=["label", "file"], inplace=True)
-    # features = df[["Lines", "Contours Colour", "Contours Size Colour", "Fast"]].to_numpy()
-    features = df.to_numpy()
-    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=42)
+    if feature_names == None:
+        features = df.to_numpy()
+    else:
+        features = df[feature_names].to_numpy()
+
+    X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=test_size, random_state=42)
     return X_train, X_test, y_train, y_test
 
 
@@ -154,28 +157,27 @@ def main():
 
     # X_train, X_test, y_train, y_test = load_mnist()
 
-    X_train, X_test, y_train, y_test = load_ritter_sport_xy("../Image_proc/data_with_features_without_white.csv")
+    X_train, X_test, y_train, y_test = load_ritter_sport_xy("../Image_proc/data_with_features_without_white.csv", feature_names=["Lines", "Contours Colour", "Contours Size Colour"])
 
 
     # k_fold_grid_search(X_train, y_train)
 
+
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.15, random_state=42)
     train_mean = np.mean(X_train)
     train_std = np.std(X_train)
     X_train = (X_train - train_mean) / train_std
     X_test = (X_test - train_mean) / train_std
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.15, random_state=42)
-
-
     X_val = (X_val - train_mean) / train_std
 
     model = Model()
     model.add_layer(X_train.shape[1])
+    model.add_layer(32)
     model.add_layer(25)
-    model.add_layer(20)
     model.add_layer(20)
     model.add_layer(16)
     model.add_layer(y_train.shape[1])
-    model.train(X_train, y_train, epochs=600, eta=0.01, mini_batch_size=16, val_x=X_val, val_y=y_val)
+    model.train(X_train, y_train, epochs=1200, eta=0.01, mini_batch_size=32, val_x=X_val, val_y=y_val)
 
     model.predict(X_test, y_test)
 
